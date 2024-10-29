@@ -1,8 +1,9 @@
-# clamav-uploads-scanner
-This script watches for changes in your domains files and will scan set extensions for malware using ClamAV docker contianer. Malicious files are quarantined in per-user directories.
+# ClamAV Upload Scanner
 
+Automatically scan newly uploaded or modified files with ClamAV, quarantining any detected threats in a user-specific directory—ideal for shared hosting environments.
 
-- extensions.txt contains extensions to scan
-- docker-compose.yml starts ClamAV container
-- domains.list is a list of paths to eatch for changes
-- run.sh is the script itself
+You can configure which file extensions to scan and specify folders to monitor for changes.
+
+-----
+
+This script was initially developed for use with [OpenPanel](https://openpanel.com), but it can be used with any control panel as long as you provide a list of paths to monitor and have Docker and inotify installed.
