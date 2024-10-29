@@ -3,6 +3,7 @@
 DOMAINS_LIST="/etc/openpanel/clamav/domains.list"
 EXTENSIONS_FILE="/etc/openpanel/clamav/extensions.txt"
 CLAMAV_CONTAINER="clamav"
+DOCKER_COMPOSE_FILE="/root/docker-compose.yml
 LOG_FILE="/var/log/openpanel/user/clamav.json"
 SCAN_DELAY=60  # seconds to wait for load
 BATCH_FILES=10 # no of files to start batch
@@ -60,7 +61,29 @@ process_events() {
 }
 
 
+# run clamav container
+start_clamav_service() {
+    echo "Starting ClamAV Docker service..."
+    if [[ -f "$DOCKER_COMPOSE_FILE" ]]; then
+        echo "Starting ClamAV service for OpenPanel."
+        docker-compose -f "$DOCKER_COMPOSE_FILE" up -d clamav
+    else
+        echo "OpenPanel is not installed, starting standalone ClamAV service."
+        if [[ -f "docker-compose.yml" ]]; then
+            docker-compose up -d clamav
+        else
+            echo "Error: No docker-compose.yml file found in the current directory. Please follow the install instructions from README.md file."
+            exit 1
+        fi
+    fi
+}
+
+
+
+# MAIN
+
 load_extensions
+start_clamav_service
 
 # magic
 inotifywait -m -e close_write,create --fromfile "$DOMAINS_LIST" --format '%w%f' | while read file
