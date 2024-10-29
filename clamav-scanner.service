@@ -1,0 +1,12 @@
+[Unit]
+Description=ClamAV Uploads Scanner
+
+[Service]
+ExecStart=/usr/local/clamav-uploads-scanner/run.sh
+WorkingDirectory=/usr/local/clamav-uploads-scanner/
+StandardOutput=append:/var/log/openpanel/user/clamav.log
+StandardError=append:/var/log/openpanel/user/clamav_error.log
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
