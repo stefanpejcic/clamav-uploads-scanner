@@ -3,7 +3,7 @@
 DOMAINS_LIST="/etc/openpanel/clamav/domains.list"
 EXTENSIONS_FILE="/etc/openpanel/clamav/extensions.txt"
 CLAMAV_CONTAINER="clamav"
-DOCKER_COMPOSE_FILE="/root/docker-compose.yml
+DOCKER_COMPOSE_FILE="/root/docker-compose.yml"
 LOG_FILE="/var/log/openpanel/user/clamav.json"
 SCAN_DELAY=60  # seconds to wait for load
 BATCH_FILES=10 # no of files to start batch
