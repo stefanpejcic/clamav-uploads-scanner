@@ -6,10 +6,10 @@ You can configure which file extensions to scan and specify folders to monitor f
 
 -----
 
-This script was initially developed for use with [OpenPanel](https://openpanel.com), but it can be used with any control panel as long as you provide a list of paths to monitor and have Docker and inotify installed.
-
-
 ## Install
+
+This script was initially developed for use with [OpenPanel](https://openpanel.com), but it can be used with any control panel as long as you provide a list of paths to monitor (Docker and inotify will be installed).
+
 
 1. clone this repo:
    ```bash
