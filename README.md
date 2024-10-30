@@ -1,4 +1,4 @@
-# ClamAV Upload Scanner
+# ClamAV Upload Scanner 🔍📁
 
 Automatically scan newly uploaded or modified files with ClamAV, quarantining any detected threats in a user-specific directory—ideal for shared hosting environments.
 
