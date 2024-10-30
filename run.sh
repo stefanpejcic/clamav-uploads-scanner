@@ -8,14 +8,13 @@ LOG_FILE="/var/log/openpanel/user/clamav.json"
 SCAN_DELAY=60  # seconds to wait for load
 BATCH_FILES=10 # no of files to start batch
 
-trap "exit" INT
+
 
 mkdir -p "$(dirname "$DOMAINS_LIST")"
 touch "$DOMAINS_LIST"
 
 mkdir -p "$(dirname "$LOG_FILE")"
 touch "$LOG_FILE"
-
 
 # read extensions 
 load_extensions() {
@@ -91,44 +90,27 @@ start_clamav_service() {
 load_extensions
 start_clamav_service
 
-
 while true; do
     if [[ -f "$DOMAINS_LIST" ]]; then
-        # Prepare a list of directories to monitor
-        dirs_to_monitor=()
-
         while IFS= read -r dir_path; do
             if [[ -d "$dir_path" ]]; then
-                dirs_to_monitor+=("$dir_path")
-            else
-                echo "Warning: $dir_path is not a directory."
-            fi
-        done < "$DOMAINS_LIST"
-
-        # Start inotifywait on all directories
-        if [ ${#dirs_to_monitor[@]} -gt 0 ]; then
-            # Use a subshell to avoid having to kill the entire loop if we need to restart inotifywait
-            {
-                inotifywait -m -r -e close_write,create "${dirs_to_monitor[@]}" --format '%w%f' | while read -r file; do
+                #echo "Monitoring directory: $dir_path"
+                inotifywait -m -e close_write,create "$dir_path" --format '%w%f' | while read file; do
                     if [[ -e "$file" ]]; then
                         echo "$file" >> /tmp/event_files.txt
                     fi
 
-                    # Process in batches to avoid hitting limits
-                    while (( $(wc -l < /tmp/event_files.txt) >= BATCH_FILES )); do
+                    if (( $(wc -l < /tmp/event_files.txt) >= BATCH_FILES )); then
                         process_events /tmp/event_files.txt
                         > /tmp/event_files.txt  # Clear the temp file after processing
-                    done
-                done
-            } &
-        else
-            echo "No valid directories to monitor."
-        fi
+                    fi
+                done &
+            #else
+            #     echo "$dir_path does not exist - Skipping."
+            fi
+        done < "$DOMAINS_LIST"
     else
         echo "File $DOMAINS_LIST does not exist. Waiting..."
-        sleep 10
+        sleep 10  # Wait before checking again
     fi
-
-    # Allow a brief pause to avoid busy-waiting
-    sleep 1
 done
