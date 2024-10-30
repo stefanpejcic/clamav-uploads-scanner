@@ -94,23 +94,12 @@ while true; do
     if [[ -f "$DOMAINS_LIST" ]]; then
         while IFS= read -r dir_path; do
             if [[ -d "$dir_path" ]]; then
-                #echo "Monitoring directory: $dir_path"
-                inotifywait -m -e close_write,create "$dir_path" --format '%w%f' | while read file; do
-                    if [[ -e "$file" ]]; then
-                        echo "$file" >> /tmp/event_files.txt
-                    fi
-
-                    if (( $(wc -l < /tmp/event_files.txt) >= BATCH_FILES )); then
-                        process_events /tmp/event_files.txt
-                        > /tmp/event_files.txt  # Clear the temp file after processing
-                    fi
-                done &
-            #else
-            #     echo "$dir_path does not exist - Skipping."
+                inotifywait -m -r -e close_write,create "$dir_path" --format '%w%f' & 
             fi
         done < "$DOMAINS_LIST"
+        
     else
         echo "File $DOMAINS_LIST does not exist. Waiting..."
-        sleep 10  # Wait before checking again
+        sleep 10
     fi
 done
