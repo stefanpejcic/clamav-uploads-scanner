@@ -71,11 +71,11 @@ start_clamav_service() {
     echo "Starting ClamAV Docker service..."
     if [[ -f "$DOCKER_COMPOSE_FILE" ]]; then
         echo "Starting ClamAV service for OpenPanel."
-        docker-compose -f "$DOCKER_COMPOSE_FILE" up -d clamav
+        docker compose -f "$DOCKER_COMPOSE_FILE" up -d clamav
     else
         echo "OpenPanel is not installed, starting standalone ClamAV service."
         if [[ -f "docker-compose.yml" ]]; then
-            docker-compose up -d clamav
+            docker compose up -d clamav
         else
             echo "Error: No docker-compose.yml file found in the current directory. Please follow the install instructions from README.md file."
             exit 1
