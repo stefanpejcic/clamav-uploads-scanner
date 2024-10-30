@@ -39,6 +39,9 @@ scan_file() {
     mkdir -p "$quarantine_dir"
 
     scan_result=$(docker exec "$CLAMAV_CONTAINER" clamscan --infected --move="$quarantine_dir" "$file" 2>&1)
+
+docker exec clamav  clamscan /home/zioj4e4z/fgdfgdfgdfgddgffgd.rs/idem.php
+
     
     if [[ $? -eq 0 ]]; then
         if [[ "$scan_result" =~ "FOUND" ]]; then
@@ -71,10 +74,12 @@ start_clamav_service() {
     echo "Starting ClamAV Docker service..."
     if [[ -f "$DOCKER_COMPOSE_FILE" ]]; then
         echo "Starting ClamAV service for OpenPanel."
+        docker compose down clamav
         docker compose -f "$DOCKER_COMPOSE_FILE" up -d clamav || { echo "Failed to start ClamAV service."; exit 1; }
     else
         echo "OpenPanel is not installed, starting standalone ClamAV service."
         if [[ -f "docker-compose.yml" ]]; then
+            docker compose down clamav
             docker compose up -d clamav || { echo "Failed to start standalone ClamAV service."; exit 1; }
         else
             echo "Error: No docker-compose.yml file found in the current directory. Please follow the install instructions from README.md file."
@@ -83,15 +88,25 @@ start_clamav_service() {
     fi
 }
 
-# Trap signals for graceful exit
-trap "exit" INT TERM
-trap "kill 0" EXIT
+
+
+
+cleanup() {
+    echo "Cleaning up..."
+    rm -f /tmp/_home_*.pid
+    exit
+}
+
+trap cleanup INT TERM
 
 # MAIN
 load_extensions
 start_clamav_service
 
-echo "Current number of files in queue: $BATCH_FILES"
+queue_count=$(wc -l < /tmp/event_files.txt)
+echo "Number fo files currently in the queue: $queue_count"
+echo "Treshold for starting ClamAV scan:      $BATCH_FILES"
+
 
 while true; do
     if [[ -f "$DOMAINS_LIST" ]]; then
@@ -103,21 +118,25 @@ while true; do
                 # Check if the process is already running
                 if [[ ! -f "$DIR_PID_FILE" ]]; then
                     echo "- $dir_path"
-                    inotifywait -m -r -e close_write,create --format '%w%f' "$dir_path" | while read -r FILE; do
-                        if [[ -e "$FILE" ]]; then
-                            echo "$FILE" >> /tmp/event_files.txt
-                            count=$(cat /tmp/event_files.txt | wc -l)
-                            echo "$FILE added to queue ($count/$BATCH_FILES)"
+                    inotifywait -m -r -e close_write,create --format '%w%f' "$dir_path" 2>/dev/null | while read -r FILE; do
+                        if [[ -f "$FILE" && "$FILE" =~ \.($EXTENSIONS)$ ]]; then                        
+                            if ! grep -Fxq "$FILE" /tmp/event_files.txt; then
+                                echo "$FILE" >> /tmp/event_files.txt
+                                count=$(wc -l < /tmp/event_files.txt)
+                                echo "$FILE added to queue ($count/$BATCH_FILES)"
+                            else
+                                echo "$FILE is already in the queue, skipping."
+                            fi 
+                        else
+                            echo "Skipping $FILE"
                         fi
 
                         if (( $(wc -l < /tmp/event_files.txt) >= BATCH_FILES )); then
                             echo "Treshold of $BATCH_FILES files reached, starting batch scanning.."
                             process_events /tmp/event_files.txt
-                            > /tmp/event_files.txt  # Clear the temp file after processing
+                            > /tmp/event_files.txt
                         fi
                     done &
-
-                    # Save the PID of the process
                     echo $! > "$DIR_PID_FILE"
                 fi
             fi
