@@ -13,11 +13,11 @@ This script was initially developed for use with [OpenPanel](https://openpanel.c
 
 1. clone this repo:
    ```bash
-   git clone https://github.com/stefanpejcic/clamav-uploads-scanner
+   git clone https://github.com/stefanpejcic/clamav-uploads-scanner /usr/local/clamav-uploads-scanner/
    ```
-2. enter 📁, set extensions in `extensions.txt` file and paths in `domains.list`.
+2. enter `/usr/local/clamav-uploads-scanner/install.sh`, set extensions in `extensions.txt` file and paths in `domains.list`.
 3. install the service by running:
    ```bash
-   bash install.sh
+   bash /usr/local/clamav-uploads-scanner/install.sh
    ```
 
