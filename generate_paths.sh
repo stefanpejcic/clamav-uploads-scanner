@@ -1,4 +1,4 @@
-
+# ONLY TO BE USED ON OP SERVER TO ADD EXISTING DOMAINS!
 
 # Get all domains
 all_domains=$(opencli domains-all)
