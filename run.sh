@@ -91,20 +91,35 @@ trap "kill 0" EXIT
 load_extensions
 start_clamav_service
 
+echo "Current number of files in queue: $BATCH_FILES"
+
 while true; do
     if [[ -f "$DOMAINS_LIST" ]]; then
         while IFS= read -r dir_path; do
             if [[ -d "$dir_path" ]]; then
-                inotifywait -m -e close_write,create "$dir_path" --format '%w%f' | while read file; do
-                    if [[ -e "$file" ]]; then
-                        echo "$file" >> /tmp/event_files.txt
-                    fi
+                # Create a unique identifier for the directory to manage the process
+                DIR_PID_FILE="/tmp/${dir_path//\//_}.pid"
 
-                    if (( $(wc -l < /tmp/event_files.txt) >= BATCH_FILES )); then
-                        process_events /tmp/event_files.txt
-                        > /tmp/event_files.txt  # Clear the temp file after processing
-                    fi
-                done &
+                # Check if the process is already running
+                if [[ ! -f "$DIR_PID_FILE" ]]; then
+                    echo "- $dir_path"
+                    inotifywait -m -r -e close_write,create --format '%w%f' "$dir_path" | while read -r FILE; do
+                        if [[ -e "$FILE" ]]; then
+                            echo "$FILE" >> /tmp/event_files.txt
+                            count=$(cat /tmp/event_files.txt | wc -l)
+                            echo "$FILE added to queue ($count/$BATCH_FILES)"
+                        fi
+
+                        if (( $(wc -l < /tmp/event_files.txt) >= BATCH_FILES )); then
+                            echo "Treshold of $BATCH_FILES files reached, starting batch scanning.."
+                            process_events /tmp/event_files.txt
+                            > /tmp/event_files.txt  # Clear the temp file after processing
+                        fi
+                    done &
+
+                    # Save the PID of the process
+                    echo $! > "$DIR_PID_FILE"
+                fi
             fi
         done < "$DOMAINS_LIST"
     else
