@@ -42,10 +42,27 @@ add_service() {
     echo "ClamAV monitoring service added and started."
 }
 
+add_to_services_json(){
+    echo "Adding ClamAV Automatic Scanner to list of services for OpenAdmin..."
+    new_service='{
+        "name": "ClamAV Automatic Scanner",
+        "type": "system",
+        "on_dashboard": false,
+        "real_name": "clamav_monitor"
+    }'
+
+    services_file="/etc/openpanel/openadmin/config/services.json"
+    jq ". += [$new_service]" "$services_file" > tmp.$$.json && mv tmp.$$.json "$services_file"
+    echo "Service added to $services_file."
+}
+
+
+
 # Check if /usr/local/panel/ exists
 if [[ -d "$PANEL_DIR" ]]; then
     echo "$PANEL_DIR exists."
     add_service
+    add_to_services_json
 else
     echo "$PANEL_DIR does not exist. Installing Docker and inotify-tools..."
     install_docker
