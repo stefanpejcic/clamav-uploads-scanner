@@ -4,6 +4,8 @@
 PANEL_DIR="/usr/local/panel/"
 SERVICE_FILE="/etc/systemd/system/clamav_monitor.service"
 
+chmod +x /usr/local/clamav-uploads-scanner/run.sh
+
 # Function to install Docker
 install_docker() {
     echo "Installing Docker..."
