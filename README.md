@@ -1,6 +1,6 @@
 # ClamAV Upload Scanner 🔍📁
 
-Automatically scan newly uploaded or modified files with [ClamAV](/Cisco-Talos/clamav), quarantining any detected threats in a user-specific directory—ideal for shared hosting environments.
+Automatically scan newly uploaded or modified files with [ClamAV](https://github.com/Cisco-Talos/clamav), quarantining any detected threats in a user-specific directory—ideal for shared hosting environments.
 
 You can configure which file extensions to scan and specify folders to monitor for changes.
 
