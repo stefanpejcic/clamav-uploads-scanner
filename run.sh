@@ -90,13 +90,18 @@ start_clamav_service() {
 load_extensions
 start_clamav_service
 
-# magic
-inotifywait -m -e close_write,create --fromfile "$DOMAINS_LIST" --format '%w%f' | while read file
-do
-    echo "$file" >> /tmp/event_files.txt
-    
-    if (( $(wc -l < /tmp/event_files.txt) > $BATCH_FILES )); then
-        process_events /tmp/event_files.txt
-        > /tmp/event_files.txt
+while true; do
+    if [[ -f "$DOMAINS_LIST" ]]; then
+        inotifywait -m -e close_write,create --fromfile "$DOMAINS_LIST" --format '%w%f' | while read file; do
+            echo "$file" >> /tmp/event_files.txt
+
+            if (( $(wc -l < /tmp/event_files.txt) >= BATCH_FILES )); then
+                process_events /tmp/event_files.txt
+                > /tmp/event_files.txt  # Clear the temporary file after processing
+            fi
+        done
+    else
+        echo "File $DOMAINS_LIST does not exist. Waiting..."
+        sleep 10  # Wait before checking again
     fi
 done
