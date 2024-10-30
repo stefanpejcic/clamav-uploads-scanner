@@ -92,25 +92,31 @@ start_clamav_service
 
 while true; do
     if [[ -f "$DOMAINS_LIST" ]]; then
+        # Prepare a list of directories to monitor
+        dirs_to_monitor=()
+        
         while IFS= read -r dir_path; do
             if [[ -d "$dir_path" ]]; then
-                #echo "Monitoring directory: $dir_path"
-                inotifywait -m -e close_write,create "$dir_path" --format '%w%f' | while read file; do
-                    if [[ -e "$file" ]]; then
-                        echo "$file" >> /tmp/event_files.txt
-                    fi
-
-                    if (( $(wc -l < /tmp/event_files.txt) >= BATCH_FILES )); then
-                        process_events /tmp/event_files.txt
-                        > /tmp/event_files.txt  # Clear the temp file after processing
-                    fi
-                done &
-            #else
-            #     echo "$dir_path does not exist - Skipping."
+                dirs_to_monitor+=("$dir_path")
             fi
         done < "$DOMAINS_LIST"
+
+        # Start inotifywait on all directories
+        if [ ${#dirs_to_monitor[@]} -gt 0 ]; then
+            inotifywait -m -r -e close_write,create "${dirs_to_monitor[@]}" --format '%w%f' | while read file; do
+                if [[ -e "$file" ]]; then
+                    echo "$file" >> /tmp/event_files.txt
+                fi
+
+                if (( $(wc -l < /tmp/event_files.txt) >= BATCH_FILES )); then
+                    process_events /tmp/event_files.txt
+                    > /tmp/event_files.txt  # Clear the temp file after processing
+                fi
+            done
+        fi
     else
         echo "File $DOMAINS_LIST does not exist. Waiting..."
-        sleep 10  # Wait before checking again
+        sleep 10
     fi
 done
+
