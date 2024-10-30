@@ -90,18 +90,35 @@ start_clamav_service() {
 load_extensions
 start_clamav_service
 
-# Start inotifywait on all directories
-if [ ${#dirs_to_monitor[@]} -gt 0 ]; then
-    inotifywait -m -r -e close_write,create "${dirs_to_monitor[@]}" --format '%w%f' | while read file; do
-        if [[ -e "$file" ]]; then
-            echo "$file" >> /tmp/event_files.txt
-        fi
 
-        # Process in batches to avoid hitting limits
-        if (( $(wc -l < /tmp/event_files.txt) >= BATCH_FILES )); then
-            process_events /tmp/event_files.txt
-            > /tmp/event_files.txt  # Clear the temp file after processing
+while true; do
+    if [[ -f "$DOMAINS_LIST" ]]; then
+        # Prepare a list of directories to monitor
+        dirs_to_monitor=()
+        
+        while IFS= read -r dir_path; do
+            if [[ -d "$dir_path" ]]; then
+                dirs_to_monitor+=("$dir_path")
+            fi
+        done < "$DOMAINS_LIST"
+
+        # Start inotifywait on all directories
+        if [ ${#dirs_to_monitor[@]} -gt 0 ]; then
+            inotifywait -m -r -e close_write,create "${dirs_to_monitor[@]}" --format '%w%f' | while read file; do
+                if [[ -e "$file" ]]; then
+                    echo "$file" >> /tmp/event_files.txt
+                fi
+        
+                # Process in batches to avoid hitting limits
+                if (( $(wc -l < /tmp/event_files.txt) >= BATCH_FILES )); then
+                    process_events /tmp/event_files.txt
+                    > /tmp/event_files.txt  # Clear the temp file after processing
+                fi
+            done &
         fi
-    done &
-fi
+    else
+        echo "File $DOMAINS_LIST does not exist. Waiting..."
+        sleep 10
+    fi
+done
 
