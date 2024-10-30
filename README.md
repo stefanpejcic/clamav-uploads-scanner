@@ -15,9 +15,9 @@ This script was initially developed for use with [OpenPanel](https://openpanel.c
    ```bash
    git clone https://github.com/stefanpejcic/clamav-uploads-scanner /usr/local/clamav-uploads-scanner/
    ```
-2. enter `/usr/local/clamav-uploads-scanner/install.sh`, set extensions in `extensions.txt` file and paths in `domains.list`.
-3. install the service by running:
+2. install the service by running:
    ```bash
    bash /usr/local/clamav-uploads-scanner/install.sh
    ```
 
+The installation script will check if OpenPanel is in use. If it is, no additional configuration is necessary, as the document root for the domains will be automatically collected. However, if OpenPanel is not being used, you will need to specify the paths to monitor in the `domains.list` file and set the extensions to scan in the `extensions.txt` file.
