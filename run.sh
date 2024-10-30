@@ -105,6 +105,8 @@ while true; do
                         > /tmp/event_files.txt  # Clear the temp file after processing
                     fi
                 done &
+            else
+                 echo "$dir_path does not exist - Skipping."
             fi
         done < "$DOMAINS_LIST"
     else
