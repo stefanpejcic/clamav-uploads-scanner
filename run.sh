@@ -93,11 +93,13 @@ start_clamav_service
 while true; do
     if [[ -f "$DOMAINS_LIST" ]]; then
         inotifywait -m -e close_write,create --fromfile "$DOMAINS_LIST" --format '%w%f' | while read file; do
-            echo "$file" >> /tmp/event_files.txt
+            if [[ -e "$file" ]]; then
+                echo "$file" >> /tmp/event_files.txt
+            fi
 
             if (( $(wc -l < /tmp/event_files.txt) >= BATCH_FILES )); then
                 process_events /tmp/event_files.txt
-                > /tmp/event_files.txt  # Clear the temporary file after processing
+                > /tmp/event_files.txt
             fi
         done
     else
