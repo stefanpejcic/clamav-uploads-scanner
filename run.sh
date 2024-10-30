@@ -6,17 +6,16 @@ CLAMAV_CONTAINER="clamav"
 DOCKER_COMPOSE_FILE="/root/docker-compose.yml"
 LOG_FILE="/var/log/openpanel/user/clamav.json"
 SCAN_DELAY=60  # seconds to wait for load
-BATCH_FILES=10 # no of files to start batch
+BATCH_FILES=10 # number of files to start batch
 
-
-
+# Create necessary directories and files
 mkdir -p "$(dirname "$DOMAINS_LIST")"
 touch "$DOMAINS_LIST"
 
 mkdir -p "$(dirname "$LOG_FILE")"
 touch "$LOG_FILE"
 
-# read extensions 
+# Load extensions
 load_extensions() {
     if [[ -f "$EXTENSIONS_FILE" ]]; then
         EXTENSIONS=$(tr '\n' '|' < "$EXTENSIONS_FILE" | sed 's/|$//')
@@ -27,12 +26,12 @@ load_extensions() {
     fi
 }
 
-# scan file
+# Scan file
 scan_file() {
     local file="$1"
     echo "Scanning file: $file"
     
-    # get user's home directory for quarantine path
+    # Get user's home directory for quarantine path
     local user_home
     user_home=$(echo "$file" | awk -F'/' '{print "/"$2"/"$3}')
     local quarantine_dir="$user_home/.quarantine"
@@ -41,19 +40,21 @@ scan_file() {
 
     scan_result=$(docker exec "$CLAMAV_CONTAINER" clamscan --infected --move="$quarantine_dir" "$file" 2>&1)
     
-    if [[ ! -f "$file" ]]; then
-        # get signature
-        local reason=$(echo "$scan_result" | grep "$file" | awk -F'FOUND' '{print $2}' | xargs)
-        
-        # log it
-        echo "{ \"timestamp\": \"$(date '+%Y-%m-%d %H:%M:%S')\", \"file\": \"$file\", \"quarantine_path\": \"$quarantine_dir\", \"reason\": \"$reason\" }," >> "$LOG_FILE"
-        echo "File quarantined: $file - Reason: $reason"
+    if [[ $? -eq 0 ]]; then
+        if [[ "$scan_result" =~ "FOUND" ]]; then
+            local reason=$(echo "$scan_result" | grep "$file" | awk -F'FOUND' '{print $2}' | xargs)
+            # Log it
+            echo "{ \"timestamp\": \"$(date '+%Y-%m-%d %H:%M:%S')\", \"file\": \"$file\", \"quarantine_path\": \"$quarantine_dir\", \"reason\": \"$reason\" }," >> "$LOG_FILE"
+            echo "File quarantined: $file - Reason: $reason"
+        else
+            echo "File is clean: $file"
+        fi
     else
-        echo "File is clean: $file"
+        echo "Error scanning file: $file"
     fi
 }
 
-# in batches
+# Process events in batches
 process_events() {
     local event_file="$1"
     while IFS= read -r file
@@ -65,17 +66,16 @@ process_events() {
     done < "$event_file"
 }
 
-
-# run clamav container
+# Run ClamAV container
 start_clamav_service() {
     echo "Starting ClamAV Docker service..."
     if [[ -f "$DOCKER_COMPOSE_FILE" ]]; then
         echo "Starting ClamAV service for OpenPanel."
-        docker compose -f "$DOCKER_COMPOSE_FILE" up -d clamav
+        docker compose -f "$DOCKER_COMPOSE_FILE" up -d clamav || { echo "Failed to start ClamAV service."; exit 1; }
     else
         echo "OpenPanel is not installed, starting standalone ClamAV service."
         if [[ -f "docker-compose.yml" ]]; then
-            docker compose up -d clamav
+            docker compose up -d clamav || { echo "Failed to start standalone ClamAV service."; exit 1; }
         else
             echo "Error: No docker-compose.yml file found in the current directory. Please follow the install instructions from README.md file."
             exit 1
@@ -83,10 +83,11 @@ start_clamav_service() {
     fi
 }
 
-
+# Trap signals for graceful exit
+trap "exit" INT TERM
+trap "kill 0" EXIT
 
 # MAIN
-
 load_extensions
 start_clamav_service
 
@@ -94,7 +95,6 @@ while true; do
     if [[ -f "$DOMAINS_LIST" ]]; then
         while IFS= read -r dir_path; do
             if [[ -d "$dir_path" ]]; then
-                #echo "Monitoring directory: $dir_path"
                 inotifywait -m -e close_write,create "$dir_path" --format '%w%f' | while read file; do
                     if [[ -e "$file" ]]; then
                         echo "$file" >> /tmp/event_files.txt
@@ -105,8 +105,6 @@ while true; do
                         > /tmp/event_files.txt  # Clear the temp file after processing
                     fi
                 done &
-            #else
-            #     echo "$dir_path does not exist - Skipping."
             fi
         done < "$DOMAINS_LIST"
     else
@@ -114,3 +112,5 @@ while true; do
         sleep 10  # Wait before checking again
     fi
 done
+
+wait  # Wait for all background jobs to finish before exiting
