@@ -34,7 +34,7 @@ install_inotify() {
 add_service() {
     echo "Adding ClamAV monitoring service..."
     
-    cp ./clamav-scanner.service $SERVICE_FILE
+    cp /usr/local/clamav-uploads-scanner/clamav-scanner.service $SERVICE_FILE
     sudo systemctl daemon-reload
     sudo systemctl enable clamav_monitor.service
     sudo systemctl start clamav_monitor.service
