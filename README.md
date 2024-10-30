@@ -21,3 +21,16 @@ This script was initially developed for use with [OpenPanel](https://github.com/
    ```
 
 The installation script will check if OpenPanel is in use. If it is, no additional configuration is necessary, as the document root for the domains will be automatically collected. However, if OpenPanel is not being used, you will need to specify the paths to monitor in the `domains.list` file and set the extensions to scan in the `extensions.txt` file.
+
+
+## Update
+
+```bash
+cd /usr/local/clamav-uploads-scanner/ && git pull
+```
+
+## Uninstall
+
+```bash
+bash /usr/local/clamav-uploads-scanner/uninstall.sh
+```
