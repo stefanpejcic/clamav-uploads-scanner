@@ -8,6 +8,11 @@ LOG_FILE="/var/log/openpanel/user/clamav.json"
 SCAN_DELAY=60  # seconds to wait for load
 BATCH_FILES=10 # no of files to start batch
 
+
+
+mkdir -p "$(dirname "$DOMAINS_LIST")"
+touch "$DOMAINS_LIST"
+
 mkdir -p "$(dirname "$LOG_FILE")"
 touch "$LOG_FILE"
 
